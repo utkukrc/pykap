@@ -89,6 +89,37 @@ class BISTCompany(object):
         self.__announcement_no = None
         return fin_reports
 
+    def get_financial_report_dates(self, fromdate = datetime.today().date() - timedelta(days = 365), todate=datetime.today().date()):
+        report_dates = []
+        if not (isinstance(fromdate, datetime) and isinstance(todate, datetime)):
+            fromdate = datetime.strptime(fromdate, "%Y-%m-%d")
+            todate = datetime.strptime(todate, "%Y-%m-%d")
+        if todate - fromdate <= timedelta(days = 365):
+            disclosurelist = self.get_historical_disclosure_list(fromdate=fromdate.strftime("%Y-%m-%d"),
+                                                                    todate=todate.strftime("%Y-%m-%d"),
+                                                                    disclosure_type="FR",
+                                                                    subject='financial report')
+        else:
+            disclosurelist = []
+            temp_date = fromdate + timedelta(days = 364)
+            while temp_date < todate:
+                temp_list = self.get_historical_disclosure_list(fromdate=fromdate.strftime("%Y-%m-%d"),
+                                                                todate=temp_date.strftime("%Y-%m-%d"),
+                                                                disclosure_type="FR",
+                                                                subject = 'financial report')
+                disclosurelist += temp_list
+                fromdate = temp_date
+                temp_date = min(temp_date + timedelta(days = 365), todate)
+        
+        for disclosure in disclosurelist:
+            report = dict()
+            report['publishDate'] = disclosure['publishDate']
+            report['year'] = disclosure['year']
+            report['term'] = disclosure['ruleTypeTerm']
+            report_dates.append(report)
+        return report_dates
+    
+
     def _get_announcement(self, announcement_no ='846388' ,lang='tr'):
         anurl = "https://www.kap.org.tr/"+ lang +"/Bildirim/" + str(self.__announcement_no)
 
